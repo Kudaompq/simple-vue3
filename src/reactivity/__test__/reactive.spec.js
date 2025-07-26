@@ -52,8 +52,50 @@ describe('reactive', () => {
       const observed = reactive(original);
       
       expect(isReactive(observed)).toBe(true);
-      expect(observed.nested).toBe(original.nested);
-      expect(observed.array).toBe(original.array);
+      
+      // ✅ 嵌套对象应该也是响应式的
+      expect(isReactive(observed.nested)).toBe(true);
+      expect(observed.nested).not.toBe(original.nested);
+      expect(observed.nested.foo).toBe(1);
+      
+      // ✅ 数组也应该是响应式的
+      expect(isReactive(observed.array)).toBe(true);
+      expect(observed.array).not.toBe(original.array);
+      expect(observed.array[0].bar).toBe(2);
+      
+      // ✅ 数组元素也应该是响应式的
+      expect(isReactive(observed.array[0])).toBe(true);
+      expect(observed.array[0]).not.toBe(original.array[0]);
+    });
+
+    it('应该支持嵌套对象的响应式更新', () => {
+      const observed = reactive({
+        nested: { count: 0 },
+        array: [{ value: 1 }]
+      });
+      
+      let dummy1, dummy2;
+      let callCount = 0;
+      
+      effect(() => {
+        callCount++;
+        dummy1 = observed.nested.count;
+        dummy2 = observed.array[0].value;
+      });
+      
+      expect(callCount).toBe(1);
+      expect(dummy1).toBe(0);
+      expect(dummy2).toBe(1);
+      
+      // 修改嵌套对象属性
+      observed.nested.count = 10;
+      expect(callCount).toBe(2);
+      expect(dummy1).toBe(10);
+      
+      // 修改数组元素属性
+      observed.array[0].value = 20;
+      expect(callCount).toBe(3);
+      expect(dummy2).toBe(20);
     });
   });
 

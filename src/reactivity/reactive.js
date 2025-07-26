@@ -33,7 +33,9 @@ export function reactive(target) {
             }
             // 触发依赖收集
             track(target, key);
-            return Reflect.get(target, key, receiver);
+            const res = Reflect.get(target, key, receiver);
+            // 如果是对象，递归处理嵌套对象
+            return isObject(res) ? reactive(res) : res;
         },
         set(target, key, value, receiver) {
             const oldValue = target[key]
