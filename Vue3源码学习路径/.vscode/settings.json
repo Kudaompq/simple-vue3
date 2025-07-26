@@ -1,0 +1,9 @@
+{
+  "markdown.copyFiles.destination": {
+    "**/*.md": "./assets/"
+  },
+  "markdown.suggest.paths.enabled": true,
+  "markdown.suggest.paths.includeWorkspaceHeaderCompletions": "onDoubleHash",
+  "markdown.editor.pasteUrlAsFormattedLink.enabled": "smart",
+  "markdown.copyFiles.overwriteBehavior": "nameIncrementally"
+}
