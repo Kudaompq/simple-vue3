@@ -1,5 +1,11 @@
 
 let activeEffect = null;
+/**
+ * effectStack 用于解决嵌套循环下的副作用函数问题
+ * 每次执行 effect 时，将当前的 activeEffect 压入栈中
+ * 执行完毕后再将其弹出
+ */
+let effectStack = [];
 let targetMap = new WeakMap();
 /**
  * 副作用函数
@@ -8,10 +14,12 @@ let targetMap = new WeakMap();
 export function effect(fn) {
     const effectFn = () => {
         try {
+            effectStack.push(activeEffect); // 将当前激活的副作用函数压入栈中
             activeEffect = effectFn; // 设置当前激活的副作用函数
             return fn(); // 执行副作用函数
         } finally {
-            activeEffect = null; // 确保在执行完副作用函数后清除 activeEffect
+            effectStack.pop(); // 从栈中移除当前副作用函数
+            activeEffect = effectStack[effect.length - 1];
         }
     }
     effectFn()
