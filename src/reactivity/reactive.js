@@ -1,5 +1,6 @@
 import { isObject,hasChanged } from "../utils";
 import { trigger,track } from "./effect";
+import { isArray } from "../utils";
 
 const IS_REACTIVE = Symbol('isReactive');
 // 存储对象到代理对象的映射
@@ -36,10 +37,18 @@ export function reactive(target) {
         },
         set(target, key, value, receiver) {
             const oldValue = target[key]
+            let oldLength;
+            if (isArray(target)) {
+                oldLength = target.length;
+            }
             const result = Reflect.set(target, key, value, receiver);
             if (hasChanged(value, oldValue)) {
                 // 触发依赖更新
                 trigger(target, key);
+                if (isArray(target) && target.length !== oldLength) {
+                    // 如果是数组且长度发生变化，触发数组相关的更新
+                    trigger(target, 'length');
+                }
             }
             return result;
         }
