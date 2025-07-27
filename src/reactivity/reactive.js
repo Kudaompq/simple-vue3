@@ -1,6 +1,7 @@
 import { isObject,hasChanged } from "../utils";
 import { trigger,track } from "./effect";
 import { isArray } from "../utils";
+import { isRef } from "./ref";
 
 const IS_REACTIVE = Symbol('isReactive');
 // 存储对象到代理对象的映射
@@ -34,6 +35,9 @@ export function reactive(target) {
             // 触发依赖收集
             track(target, key);
             const res = Reflect.get(target, key, receiver);
+            if (isRef(res)) {
+                return res.value; // 如果是 ref，返回其值
+            }
             // 如果是对象，递归处理嵌套对象
             return isObject(res) ? reactive(res) : res;
         },
@@ -42,6 +46,10 @@ export function reactive(target) {
             let oldLength;
             if (isArray(target)) {
                 oldLength = target.length;
+            }
+            if (isRef(target[key])) {
+                target[key].value = value; // 如果是 ref，直接设置其值
+                return true; // 返回 true 表示设置成功
             }
             const result = Reflect.set(target, key, value, receiver);
             if (hasChanged(value, oldValue)) {
