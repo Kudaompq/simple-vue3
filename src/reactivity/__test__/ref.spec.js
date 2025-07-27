@@ -376,6 +376,94 @@ describe('ref', () => {
             expect(dummyName).toBe('vue3');
             expect(callCount).toBe(3);
         });
+
+        it('reactive 对象可以作为 ref 的值', () => {
+            // 创建一个 reactive 对象
+            const reactiveObj = reactive({
+                count: 0,
+                name: 'vue'
+            });
+
+            // 将 reactive 对象作为 ref 的值
+            const refOfReactive = ref(reactiveObj);
+
+            let dummy;
+            let callCount = 0;
+
+            effect(() => {
+                callCount++;
+                dummy = refOfReactive.value.count + refOfReactive.value.name.length;
+            });
+
+            expect(callCount).toBe(1);
+            expect(dummy).toBe(3); // 0 + 3 (vue的长度)
+
+            // 通过 ref 访问修改 reactive 对象的属性
+            refOfReactive.value.count = 5;
+            expect(callCount).toBe(2);
+            expect(dummy).toBe(8); // 5 + 3
+
+            refOfReactive.value.name = 'vue3';
+            expect(callCount).toBe(3);
+            expect(dummy).toBe(9); // 5 + 4 (vue3的长度)
+
+            // 直接修改原始 reactive 对象也应该触发更新
+            reactiveObj.count = 10;
+            expect(callCount).toBe(4);
+            expect(dummy).toBe(14); // 10 + 4
+
+            // 替换整个 reactive 对象
+            const newReactiveObj = reactive({ count: 20, name: 'react' });
+            refOfReactive.value = newReactiveObj;
+            expect(callCount).toBe(5);
+            expect(dummy).toBe(25); // 20 + 5 (react的长度)
+        });
+
+        it('ref 中包含 reactive 的嵌套结构', () => {
+            const state = ref({
+                user: reactive({
+                    profile: {
+                        name: 'Alice',
+                        age: 25
+                    },
+                    settings: reactive({
+                        theme: 'dark',
+                        language: 'zh'
+                    })
+                })
+            });
+
+            let summary;
+            let callCount = 0;
+
+            effect(() => {
+                callCount++;
+                const { profile, settings } = state.value.user;
+                summary = `${profile.name} (${profile.age}) - ${settings.theme}/${settings.language}`;
+            });
+
+            expect(callCount).toBe(1);
+            expect(summary).toBe('Alice (25) - dark/zh');
+
+            // 修改嵌套的 reactive 对象
+            state.value.user.profile.name = 'Bob';
+            expect(callCount).toBe(2);
+            expect(summary).toBe('Bob (25) - dark/zh');
+
+            state.value.user.settings.theme = 'light';
+            expect(callCount).toBe(3);
+            expect(summary).toBe('Bob (25) - light/zh');
+
+            // 替换整个 ref 的值
+            state.value = {
+                user: reactive({
+                    profile: { name: 'Charlie', age: 30 },
+                    settings: reactive({ theme: 'auto', language: 'en' })
+                })
+            };
+            expect(callCount).toBe(4);
+            expect(summary).toBe('Charlie (30) - auto/en');
+        });
     });
 
     describe('实际应用场景', () => {
