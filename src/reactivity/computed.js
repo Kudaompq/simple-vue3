@@ -34,10 +34,12 @@ class ComputedRefImpl {
     } 
 
     get value() {
+        // 依赖收集应该总是进行，不管是否需要重新计算
+        track(this, 'value');
+        
         if (this._dirty) {
             this._value = this.effect(); // 重新计算值
             this._dirty = false; // 重置脏标记
-            track(this, 'value');
         }
         return this._value; // 返回计算后的值
     }

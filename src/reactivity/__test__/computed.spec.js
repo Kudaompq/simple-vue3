@@ -85,6 +85,34 @@ describe('computed', () => {
             expect(callCount).toBe(2);
             expect(dummy).toBe(4); // 2 + 1 + 1
         });
+
+        it('缓存状态下新的 effect 应该能正确收集依赖', () => {
+            const value = ref(1);
+            const c = computed(() => value.value * 2);
+
+            // 第一次访问，触发计算
+            expect(c.value).toBe(2);
+
+            // 第二次访问，使用缓存
+            expect(c.value).toBe(2);
+
+            // 现在创建一个新的 effect，应该能正确收集依赖
+            let dummy;
+            let callCount = 0;
+
+            effect(() => {
+                callCount++;
+                dummy = c.value; // 此时 computed 是缓存状态，但仍应收集依赖
+            });
+
+            expect(callCount).toBe(1);
+            expect(dummy).toBe(2);
+
+            // 修改依赖，新的 effect 应该被触发
+            value.value = 5;
+            expect(callCount).toBe(2);
+            expect(dummy).toBe(10);
+        });
     });
 
     describe('与 reactive 结合', () => {
