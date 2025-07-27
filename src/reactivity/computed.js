@@ -38,7 +38,14 @@ class ComputedRefImpl {
         track(this, 'value');
         
         if (this._dirty) {
-            this._value = this.effect(); // 重新计算值
+            /**
+             * 计算新值，并且重置脏标记
+             * this.effect() 会执行getter函数，在getter中可以访问响应式数据
+             * 触发依赖收集
+             * computed有调度器，所以在其他依赖更新后会触发scheduler
+             * 将dirty设置为true，trigger依赖于当前computed的effect，这个时候dirty为true，会重新计算
+             */
+            this._value = this.effect();
             this._dirty = false; // 重置脏标记
         }
         return this._value; // 返回计算后的值
