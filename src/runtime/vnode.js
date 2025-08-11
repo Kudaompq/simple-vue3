@@ -1,9 +1,10 @@
+import { isObject } from "../utils/index.js";
 
 /**
  * 特殊节点符号
  */
-export const Text = Symbol('Text');
-export const Fragment = Symbol('Fragment');
+export const Text = Symbol("Text");
+export const Fragment = Symbol("Fragment");
 
 /**
  * 节点类型标志，用于区分不同类型的节点
@@ -18,8 +19,7 @@ export const ShapeFlags = {
     TEXT_CHILDREN: 1 << 4,
     ARRAY_CHILDREN: 1 << 5,
     CHILDREN: (1 << 4) | (1 << 5),
-
-}
+};
 /**
  * 创建虚拟节点，在源码中是判断类型再去执行对应的createVNode函数
  * 源码中是分成了三个方法 h => createVNode => createBaseVNode
@@ -27,25 +27,25 @@ export const ShapeFlags = {
  * @param {*} props 属性
  * @param {*} children 子节点
  */
-export function h(type,props = null,children = null){
+export function h(type, props = null, children = null) {
     let shapeFlag = 0;
-    if (typeof type === 'string'){
+    if (typeof type === "string") {
         shapeFlag = ShapeFlags.ELEMENT;
-    } else if (type === Text){
+    } else if (type === Text) {
         shapeFlag = ShapeFlags.TEXT;
-    } else if (type === Fragment){
+    } else if (type === Fragment) {
         shapeFlag = ShapeFlags.FRAGMENT;
     } else {
         shapeFlag = ShapeFlags.COMPONENT;
     }
 
     // 处理子节点
-    if (typeof children === 'string' || typeof children === 'number'){
+    if (typeof children === "string" || typeof children === "number") {
         shapeFlag |= ShapeFlags.TEXT_CHILDREN;
         children = children.toString();
-    } else if (Array.isArray(children)){
+    } else if (Array.isArray(children)) {
         shapeFlag |= ShapeFlags.ARRAY_CHILDREN;
-    } 
+    }
 
     return {
         type,
@@ -57,6 +57,22 @@ export function h(type,props = null,children = null){
         key: props && (props.key != null ? props.key : null),
         component: null, // 组件实例
         patchFlag: 0, // 用于优化的标志位 TODO: 后续进行性能优化
+        next: null, // 用于组件更新时的对比
+    };
+}
+
+/**
+ * 将字符串或者数组转换成虚拟节点
+ * @param {*} result
+ * @returns
+ */
+export function normalizeVNode(result) {
+    if (Array.isArray(result)) {
+        return h(Fragment, null, result);
     }
-    
+    if (isObject(result)) {
+        return result;
+    }
+    // 考虑到result可能是number，所以需要转换为字符串
+    return h(Text, null, result.toString());
 }

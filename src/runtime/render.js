@@ -1,5 +1,6 @@
 import { ShapeFlags } from "./vnode.js";
 import { patchProps } from "./patchProps.js";
+import { mountComponent } from "./component.js";
 
 /**
  * 渲染函数,在源码中对于渲染函数中所调用的方法抽象出了一个RenderOptions，
@@ -46,7 +47,7 @@ function unmount(vnode) {
 function patch(n1, n2, container, anchor) {
     if (n1 && !isSameVNodeType(n1, n2)) {
         // 不同类型的节点需要卸载旧节点
-        anchor = (n1.anchor || n1.el).nextSibiling;
+        anchor = (n1.anchor || n1.el).nextSibling;
         unmount(n1);
         n1 = null;
     }
@@ -250,6 +251,10 @@ function unmountFragment(vnode) {
     cur.parentNode.removeChild(cur);
 }
 
+// ======================================
+//               组件节点相关
+// ======================================
+
 /**
  * 处理组件节点
  * @param {*} n1 旧节点
@@ -257,7 +262,24 @@ function unmountFragment(vnode) {
  * @param {*} container 容器
  * @param {*} anchor 锚点
  */
-function processComponent(n1, n2, container, anchor) {}
+function processComponent(n1, n2, container, anchor) {
+    if (n1 == null) {
+        mountComponent(n2, container, anchor, patch);
+    } else {
+        updateComponent(n1, n2);
+    }
+}
+
+function unmountComponent(vnode) {
+    const { component } = vnode;
+    unmount(component.subTree);
+}
+
+function updateComponent(n1, n2) {
+    n2.component = n1.component;
+    n2.component.next = n2;
+    n2.component.update();
+}
 
 // ======================================
 //               patch相关
