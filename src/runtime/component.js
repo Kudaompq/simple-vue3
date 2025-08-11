@@ -67,19 +67,20 @@ export function mountComponent(vnode, container, anchor, patch) {
                     ...instance.props,
                     ...instance.setupState,
                 };
-                const prev = instance.subTree;
-                const subTree = (instance.subTree = normalizeVNode(
-                    originComp.render(instance.ctx)
-                ));
-                if (Object.keys(instance.attrs)) {
-                    subTree.props = {
-                        ...subTree.props,
-                        ...instance.attrs,
-                    };
-                }
-                patch(prev, subTree, container, anchor);
-                vnode.el = subTree.el;
             }
+            const prev = instance.subTree;
+            // vnode 子树
+            const subTree = (instance.subTree = normalizeVNode(
+                originComp.render(instance.ctx)
+            ));
+            if (Object.keys(instance.attrs)) {
+                subTree.props = {
+                    ...subTree.props,
+                    ...instance.attrs,
+                };
+            }
+            patch(prev, subTree, container, anchor);
+            vnode.el = subTree.el;
         }
     });
     vnode.component = instance;

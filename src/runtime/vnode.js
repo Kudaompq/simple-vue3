@@ -67,9 +67,11 @@ export function h(type, props = null, children = null) {
  * @returns
  */
 export function normalizeVNode(result) {
+    // 对于多个子节点的情况，需要用Fragment包裹起来
     if (Array.isArray(result)) {
         return h(Fragment, null, result);
     }
+    // 如果是对象的话，那就是vnode直接返回即可
     if (isObject(result)) {
         return result;
     }
