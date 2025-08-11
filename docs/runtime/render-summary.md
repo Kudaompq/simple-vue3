@@ -150,6 +150,45 @@ if (Object.keys(instance.attrs).length > 0) {
 }
 ```
 
+### 调度器集成 (Scheduler Integration)
+
+组件系统与调度器深度集成，实现异步更新和批处理：
+
+```javascript
+// 在 mountComponent 中使用调度器
+instance.update = effect(
+    () => {
+        // 组件更新逻辑
+        if (!instance.isMounted) {
+            // 首次挂载
+            const subTree = normalizeVNode(originComp.render(instance.ctx));
+            patch(null, subTree, container, anchor);
+            instance.isMounted = true;
+        } else {
+            // 更新阶段
+            const prev = instance.subTree;
+            const subTree = normalizeVNode(originComp.render(instance.ctx));
+            patch(prev, subTree, container, anchor);
+        }
+    },
+    {
+        scheduler: queueJob, // 使用调度器进行异步更新
+    }
+);
+```
+
+**核心特性：**
+- **异步更新**：响应式数据变化不会立即触发重新渲染，而是加入任务队列
+- **批处理**：同一个 tick 内的多次更新会被合并，只执行一次渲染
+- **nextTick 支持**：提供 DOM 更新后的回调机制
+- **性能优化**：避免不必要的同步渲染，提升应用性能
+
+**工作流程：**
+1. 响应式数据变化触发 effect
+2. effect 通过 scheduler 将更新任务加入队列
+3. 在下一个微任务中批量执行所有更新
+4. DOM 更新完成后，执行 nextTick 回调
+
 **优化策略**:
 - 使用位运算进行快速类型判断
 - 不同类型节点直接替换，避免无效的 diff
@@ -308,6 +347,8 @@ if (j < maxIndex) {
 
 ## 测试覆盖
 
+当前测试套件包含 **8个测试文件，共156个测试用例**，全面覆盖渲染器的各个方面：
+
 ### 基本功能测试
 - ✅ 元素节点渲染（属性、文本、数组子节点）
 - ✅ 文本节点渲染
@@ -347,6 +388,7 @@ if (j < maxIndex) {
 - ✅ 组件生命周期管理（isMounted 状态）
 - ✅ 组件更新机制（主动/被动更新）
 - ✅ 错误处理（render 返回非 VNode、数组等）
+- ✅ 调度器集成（异步更新、批处理、nextTick 处理）
 
 ## 设计亮点
 
