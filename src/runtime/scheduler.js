@@ -3,6 +3,7 @@ const queue = [];
 let isFlushing = false;
 const resolvePromise = Promise.resolve();
 let currentFlushPromise = null;
+const set = new Set();
 
 /**
  * 在DOM渲染后（update执行后）执行
@@ -19,7 +20,8 @@ export function nextTick(fn) {
  * @param {*} job 任务函数
  */
 export function queueJob(job) {
-    if (!queue.length || !queue.includes(job)) {
+    if (!set.has(job)) {
+        set.add(job);
         queue.push(job);
         queueFlush();
     }
@@ -44,6 +46,7 @@ function flushJobs() {
     } finally {
         isFlushing = false;
         queue.length = 0;
+        set.clear();
         currentFlushPromise = null;
     }
 }
