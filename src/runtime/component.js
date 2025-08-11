@@ -1,5 +1,6 @@
 import { effect, reactive } from "../reactivity";
 import { normalizeVNode } from "./vnode.js";
+import { queueJob } from "./scheduler.js";
 /**
  * 更新组件的props和attrs
  * @param {Component Instance} instance
@@ -43,45 +44,50 @@ export function mountComponent(vnode, container, anchor, patch) {
         ...instance.props,
         ...instance.setupState,
     };
-    instance.update = effect(() => {
-        if (!instance.isMounted) {
-            const subTree = (instance.subTree = normalizeVNode(
-                originComp.render(instance.ctx)
-            ));
-            if (Object.keys(instance.attrs)) {
-                subTree.props = {
-                    ...subTree.props,
-                    ...instance.attrs,
-                };
+    instance.update = effect(
+        () => {
+            if (!instance.isMounted) {
+                const subTree = (instance.subTree = normalizeVNode(
+                    originComp.render(instance.ctx)
+                ));
+                if (Object.keys(instance.attrs)) {
+                    subTree.props = {
+                        ...subTree.props,
+                        ...instance.attrs,
+                    };
+                }
+                patch(null, subTree, container, anchor);
+                instance.isMounted = true;
+                vnode.el = subTree.el;
+            } else {
+                // 如果next存在，则说明是被动更新，否则是主动更新
+                if (instance.next) {
+                    vnode = instance.next;
+                    instance.next = null;
+                    updateComponentProps(instance, vnode);
+                    instance.ctx = {
+                        ...instance.props,
+                        ...instance.setupState,
+                    };
+                }
+                const prev = instance.subTree;
+                // vnode 子树
+                const subTree = (instance.subTree = normalizeVNode(
+                    originComp.render(instance.ctx)
+                ));
+                if (Object.keys(instance.attrs)) {
+                    subTree.props = {
+                        ...subTree.props,
+                        ...instance.attrs,
+                    };
+                }
+                patch(prev, subTree, container, anchor);
+                vnode.el = subTree.el;
             }
-            patch(null, subTree, container, anchor);
-            instance.isMounted = true;
-            vnode.el = subTree.el;
-        } else {
-            // 如果next存在，则说明是被动更新，否则是主动更新
-            if (instance.next) {
-                vnode = instance.next;
-                instance.next = null;
-                updateComponentProps(instance, vnode);
-                instance.ctx = {
-                    ...instance.props,
-                    ...instance.setupState,
-                };
-            }
-            const prev = instance.subTree;
-            // vnode 子树
-            const subTree = (instance.subTree = normalizeVNode(
-                originComp.render(instance.ctx)
-            ));
-            if (Object.keys(instance.attrs)) {
-                subTree.props = {
-                    ...subTree.props,
-                    ...instance.attrs,
-                };
-            }
-            patch(prev, subTree, container, anchor);
-            vnode.el = subTree.el;
+        },
+        {
+            scheduler: queueJob,
         }
-    });
+    );
     vnode.component = instance;
 }

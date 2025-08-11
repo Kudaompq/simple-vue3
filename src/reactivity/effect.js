@@ -1,4 +1,3 @@
-
 let activeEffect = null;
 /**
  * effectStack 用于解决嵌套循环下的副作用函数问题
@@ -10,7 +9,7 @@ let targetMap = new WeakMap();
 
 /**
  * 副作用函数
- * @param {Function} fn 
+ * @param {Function} fn
  */
 export function effect(fn, options = {}) {
     const effectFn = () => {
@@ -25,7 +24,7 @@ export function effect(fn, options = {}) {
             effectStack.pop(); // 从栈中移除当前副作用函数
             activeEffect = effectStack[effectStack.length - 1];
         }
-    }
+    };
 
     effectFn.deps = [];
     // 💡 关键：给副作用函数添加依赖列表
@@ -51,20 +50,20 @@ function cleanup(effectFn) {
 }
 /**
  * 依赖收集=>放在 proxy 的 get 方法中
- * @param {Object} target 
- * @param {string} key 
- * @returns 
+ * @param {Object} target
+ * @param {string} key
+ * @returns
  */
 export function track(target, key) {
     if (!activeEffect) return; // 如果没有激活的副作用函数，直接返回
 
     let deps = targetMap.get(target);
     if (!deps) {
-        targetMap.set(target, (deps = new Map()))
+        targetMap.set(target, (deps = new Map()));
     }
     let dep = deps.get(key);
     if (!dep) {
-        deps.set(key, (dep = new Set()))
+        deps.set(key, (dep = new Set()));
     }
 
     // 💡 关键：建立双向连接
@@ -74,9 +73,9 @@ export function track(target, key) {
 
 /**
  * 触发依赖更新=>放在 proxy 的 set 方法中
- * @param {Object} target 
- * @param {string} key 
- * @returns 
+ * @param {Object} target
+ * @param {string} key
+ * @returns
  */
 export function trigger(target, key) {
     const deps = targetMap.get(target);
@@ -86,12 +85,11 @@ export function trigger(target, key) {
 
     // 💡 关键：创建副本避免无限循环
     const effectsToRun = new Set(dep);
-    effectsToRun.forEach(effectFn => {
+    effectsToRun.forEach((effectFn) => {
         if (effectFn.scheduler) {
-            effectFn.scheduler(); // 如果有调度器，调用调度器
+            effectFn.scheduler(effectFn); // 如果有调度器，调用调度器
         } else {
             effectFn(); // 执行所有依赖的副作用函数
         }
     });
 }
-
